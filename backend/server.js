@@ -11,6 +11,8 @@ const app = express();
 app.use(express.json({ limit: "10mb" }));
 app.use(express.static("public"));
 
+const PORT = process.env.PORT || 3000;
+
 const DB_PATH = process.env.RENDER
   ? "/var/data/db.sqlite"
   : "./db.sqlite";
