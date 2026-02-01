@@ -223,6 +223,3 @@ app.post("/analyze", (_, res) => {
   res.json({ feedback: "Analysis coming soon 👀" });
 });
 
-app.listen(process.env.PORT || 3000, () =>
-  debug("BOOT", "Server running")
-);
