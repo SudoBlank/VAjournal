@@ -199,11 +199,6 @@ app.post("/saveDrawing", (req, res) => {
 /* ---------- AUDIO ---------- */
 app.post("/saveAudio", (req, res) => {
   const { username, journal, audio } = req.body;
-
-<<<<<<< HEAD
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`[SERVER] Running on port ${PORT}`);
-=======
   db.get(
     `SELECT j.id FROM journals j JOIN users u ON j.user_id=u.id
      WHERE u.username=? AND j.name=?`,
@@ -216,7 +211,9 @@ app.listen(PORT, '0.0.0.0', () => {
       );
     }
   );
->>>>>>> ffa4498 (fix errors in backend after removing node_modules)
+});
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`[SERVER] Running on port ${PORT}`);
 });
 
 /* ---------- ANALYZE ---------- */
