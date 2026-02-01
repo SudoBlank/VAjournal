@@ -5,30 +5,38 @@ let mediaRecorder, audioChunks = [];
 
 /* ---------- AUTH ---------- */
 window.register = async () => {
-  const u = username.value, p = password.value;
-  await fetch("/register", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ username:u, password:p }) });
-  currentUser = u;
-  await initCrypto(p);
-  showUI();
-};
-
-window.login = async () => {
-  const u = username.value, p = password.value;
-  const r = await fetch("/login", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ username:u, password:p }) });
-  if ((await r.json()).ok) {
+  const u = document.getElementById("username").value, p = document.getElementById("password").value;
+  const r = await fetch("/register", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ username:u, password:p }) });
+  const data = await r.json();
+  if (data.ok) {
     currentUser = u;
     await initCrypto(p);
     showUI();
+  } else {
+    alert(data.error || "Registration failed");
+  }
+};
+
+window.login = async () => {
+  const u = document.getElementById("username").value, p = document.getElementById("password").value;
+  const r = await fetch("/login", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ username:u, password:p }) });
+  const data = await r.json();
+  if (data.ok) {
+    currentUser = u;
+    await initCrypto(p);
+    showUI();
+  } else {
+    alert("Login failed");
   }
 };
 
 /* ---------- TEXT ---------- */
 window.saveEntry = async () => {
-  const encrypted = await encryptText(entry.value);
+  const encrypted = await encryptText(document.getElementById("entry").value);
   await fetch("/save", {
     method:"POST",
     headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ username:currentUser, journal:journalSelect.value, encrypted })
+    body:JSON.stringify({ username:currentUser, journal:document.getElementById("journalSelect").value, encrypted })
   });
 };
 
@@ -50,7 +58,7 @@ window.saveDrawing = async () => {
     headers:{ "Content-Type":"application/json" },
     body:JSON.stringify({
       username: currentUser,
-      journal: journalSelect.value,
+      journal: document.getElementById("journalSelect").value,
       image: canvas.toDataURL()
     })
   });
@@ -76,7 +84,7 @@ window.stopAudio = async () => {
         headers:{ "Content-Type":"application/json" },
         body:JSON.stringify({
           username: currentUser,
-          journal: journalSelect.value,
+          journal: document.getElementById("journalSelect").value,
           audio: reader.result
         })
       });
