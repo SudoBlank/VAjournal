@@ -1,206 +1,91 @@
 import { initCrypto, encryptText, decryptText } from "./crypto.js";
 
-let currentUser = null;
+let currentUser;
+let mediaRecorder, audioChunks = [];
 
-function debug(msg) {
-  console.log("[APP]", msg);
-}
-
+/* ---------- AUTH ---------- */
 window.register = async () => {
-  debug("Register clicked");
-
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
-
-  const res = await fetch("/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
-
-  const data = await res.json();
-  debug("Register response: " + JSON.stringify(data));
-
-  if (data.ok) {
-    currentUser = username;
-    await initCrypto(password);
-    alert("Registered!");
-    showLoggedInUI();
-  }
+  const u = username.value, p = password.value;
+  await fetch("/register", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ username:u, password:p }) });
+  currentUser = u;
+  await initCrypto(p);
+  showUI();
 };
 
 window.login = async () => {
-  debug("Login clicked");
-
-  const username = document.getElementById("username").value;
-  const password = document.getElementById("password").value;
-
-  const res = await fetch("/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password }),
-  });
-
-  const data = await res.json();
-  debug("Login response: " + JSON.stringify(data));
-
-  if (data.ok) {
-    currentUser = username;
-    await initCrypto(password);
-    alert("Logged in!");
-    showLoggedInUI();
+  const u = username.value, p = password.value;
+  const r = await fetch("/login", { method:"POST", headers:{ "Content-Type":"application/json" }, body:JSON.stringify({ username:u, password:p }) });
+  if ((await r.json()).ok) {
+    currentUser = u;
+    await initCrypto(p);
+    showUI();
   }
 };
 
+/* ---------- TEXT ---------- */
 window.saveEntry = async () => {
-  debug("Save journal clicked");
-
-  if (!currentUser) {
-    alert("Not logged in");
-    return;
-  }
-
-  const text = document.getElementById("entry").value;
-  const journal = document.getElementById("journalSelect").value || "default";
-
-  debug("Encrypting journal text");
-  const encrypted = await encryptText(text);
-
-  debug("Sending to backend");
-  const res = await fetch("/save", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ encrypted, journal, username: currentUser }),
+  const encrypted = await encryptText(entry.value);
+  await fetch("/save", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ username:currentUser, journal:journalSelect.value, encrypted })
   });
-
-  const data = await res.json();
-  debug("Save response: " + JSON.stringify(data));
-
-  alert("Journal saved!");
 };
 
-window.createJournal = async () => {
-  debug("Create journal clicked");
+/* ---------- DRAW ---------- */
+const canvas = document.getElementById("draw");
+const ctx = canvas.getContext("2d");
+let drawing = false;
 
-  const journalName = document.getElementById("newJournal").value;
-  if (!journalName) {
-    alert("Enter journal name");
-    return;
-  }
-
-  const res = await fetch("/createJournal", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ journalName, username: currentUser }),
-  });
-
-  const data = await res.json();
-  debug("Create journal response: " + JSON.stringify(data));
-
-  if (data.ok) {
-    alert("Journal created!");
-    await loadJournals();
-  } else {
-    alert(data.error || "Failed to create journal");
-  }
+canvas.onmousedown = () => drawing = true;
+canvas.onmouseup = () => drawing = false;
+canvas.onmousemove = e => {
+  if (!drawing) return;
+  ctx.fillRect(e.offsetX, e.offsetY, 4, 4);
 };
 
-window.analyze = async () => {
-  debug("Analyze clicked");
-
-  const text = document.getElementById("entry").value;
-  if (!text) {
-    alert("Write something first");
-    return;
-  }
-
-  const res = await fetch("/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+window.saveDrawing = async () => {
+  await fetch("/saveDrawing", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      username: currentUser,
+      journal: journalSelect.value,
+      image: canvas.toDataURL()
+    })
   });
-
-  const data = await res.json();
-  debug("Analyze response: " + JSON.stringify(data));
-
-  if (data.feedback) {
-    document.getElementById("output").innerText = data.feedback;
-  }
 };
 
-window.loadEntries = async () => {
-  debug("Load entries clicked");
-
-  const journal = document.getElementById("journalSelect").value;
-  if (!journal) {
-    alert("Select a journal first");
-    return;
-  }
-
-  const res = await fetch("/loadEntries", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: currentUser, journal }),
-  });
-
-  const data = await res.json();
-  debug("Load entries response: " + JSON.stringify(data));
-
-  const list = document.getElementById("entries-list");
-  list.innerHTML = "";
-
-  if (data.entries && data.entries.length > 0) {
-    for (const entry of data.entries) {
-      try {
-        const decrypted = await decryptText(entry.encrypted);
-        const div = document.createElement("div");
-        div.className = "entry";
-        div.innerHTML = `<strong>${new Date(entry.date).toLocaleString()}</strong><br>${decrypted}`;
-        list.appendChild(div);
-      } catch (e) {
-        debug("Failed to decrypt entry: " + e);
-      }
-    }
-  } else {
-    list.innerHTML = "<p>No entries found.</p>";
-  }
+/* ---------- AUDIO ---------- */
+window.startAudio = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio:true });
+  mediaRecorder = new MediaRecorder(stream);
+  audioChunks = [];
+  mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+  mediaRecorder.start();
 };
 
-async function loadJournals() {
-  const res = await fetch("/journals", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username: currentUser }),
-  });
-  const data = await res.json();
+window.stopAudio = async () => {
+  mediaRecorder.stop();
+  mediaRecorder.onstop = async () => {
+    const blob = new Blob(audioChunks);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      await fetch("/saveAudio", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify({
+          username: currentUser,
+          journal: journalSelect.value,
+          audio: reader.result
+        })
+      });
+    };
+    reader.readAsDataURL(blob);
+  };
+};
 
-  const select = document.getElementById("journalSelect");
-  select.innerHTML = "";
-  data.journals.forEach(j => {
-    const option = document.createElement("option");
-    option.value = j;
-    option.text = j;
-    select.appendChild(option);
-  });
+function showUI() {
+  auth.style.display="none";
+  app.style.display="block";
 }
-
-function showLoggedInUI() {
-  document.getElementById("auth-section").style.display = "none";
-  document.getElementById("journal-section").style.display = "block";
-  document.getElementById("entry-section").style.display = "block";
-  document.getElementById("user-info").style.display = "block";
-  document.getElementById("current-user").innerText = currentUser;
-  loadJournals();
-}
-
-window.logout = () => {
-  currentUser = null;
-  document.getElementById("auth-section").style.display = "block";
-  document.getElementById("journal-section").style.display = "none";
-  document.getElementById("entry-section").style.display = "none";
-  document.getElementById("user-info").style.display = "none";
-  document.getElementById("output").innerText = "";
-  document.getElementById("entry").value = "";
-  document.getElementById("newJournal").value = "";
-  document.getElementById("entries-list").innerHTML = "";
-};

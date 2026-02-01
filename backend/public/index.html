@@ -1,65 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VAjournal</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div class="container">
-  <h1>VAjournal</h1>
+<div id="auth">
+  <input id="username">
+  <input id="password" type="password">
+  <button onclick="register()">Register</button>
+  <button onclick="login()">Login</button>
+</div>
 
-  <div id="auth-section">
-    <h2>Authentication</h2>
-    <div class="form-group">
-      <label for="username">Username:</label>
-      <input id="username" placeholder="Enter username">
-    </div>
-    <div class="form-group">
-      <label for="password">Password:</label>
-      <input id="password" type="password" placeholder="Enter password">
-    </div>
-    <div class="button-group">
-      <button onclick="register()">Register</button>
-      <button onclick="login()">Login</button>
-    </div>
-    <div id="user-info" style="display: none;">
-      <p>Logged in as: <span id="current-user"></span></p>
-      <button onclick="logout()">Logout</button>
-    </div>
-  </div>
+<div id="app" style="display:none">
+  <select id="journalSelect"><option>default</option></select>
 
-  <div id="journal-section" style="display: none;">
-    <h2>Journals</h2>
-    <div class="form-group">
-      <label for="journalSelect">Select Journal:</label>
-      <select id="journalSelect"></select>
-    </div>
-    <div class="form-group">
-      <label for="newJournal">New Journal Name:</label>
-      <input id="newJournal" placeholder="Enter new journal name">
-    </div>
-    <button onclick="createJournal()">Create Journal</button>
-  </div>
+  <textarea id="entry"></textarea>
+  <button onclick="saveEntry()">Save Text</button>
 
-  <div id="entry-section" style="display: none;">
-    <h2>Journal Entry</h2>
-    <div class="form-group">
-      <label for="entry">Write your journal entry:</label>
-      <textarea id="entry" placeholder="Write your thoughts here..."></textarea>
-    </div>
-    <div class="button-group">
-      <button onclick="saveEntry()">Save Entry</button>
-      <button onclick="analyze()">AI Feedback</button>
-      <button onclick="loadEntries()">Load Past Entries</button>
-    </div>
-    <div id="entries-list"></div>
-  </div>
+  <canvas id="draw" width="300" height="200"></canvas>
+  <button onclick="saveDrawing()">Save Drawing</button>
 
-  <div id="output-section">
-    <h2>AI Feedback</h2>
-    <pre id="output"></pre>
-  </div>
+  <button onclick="startAudio()">Start Audio</button>
+  <button onclick="stopAudio()">Stop Audio</button>
 </div>
 
 <script type="module" src="app.js"></script>
