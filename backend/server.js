@@ -208,7 +208,7 @@ app.post("/loadEntries", (req, res) => {
 });
 
 
-app.listen(PORT, () => {
-  debug(`Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`[SERVER] Running on port ${PORT}`);
 });
 
